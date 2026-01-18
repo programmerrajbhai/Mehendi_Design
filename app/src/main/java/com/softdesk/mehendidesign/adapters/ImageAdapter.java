@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.Animation;
 import android.view.animation.TranslateAnimation;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -21,7 +20,7 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
 
     Context context;
     List<DesignItem> designList;
-    boolean isFeed;
+    boolean isFeed; // true = Home (Pinterest), false = Gallery (Grid)
     int lastPosition = -1;
 
     public ImageAdapter(Context context, List<DesignItem> designList, boolean isFeed) {
@@ -33,10 +32,8 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // 🔥 FIX: সঠিক লেআউট ফাইল লোড করা হচ্ছে
-        // আপনার ফোল্ডারে এই নামের ফাইলগুলো থাকতে হবে
-        int layoutId = isFeed ? R.layout.layout_item_square : R.layout.layout_item_gallery;
-
+        // 🔥 FIX: হোম ফিডের জন্য Pinterest Layout, গ্যালারির জন্য Grid Layout
+        int layoutId = isFeed ? R.layout.layout_item_feed : R.layout.layout_item_gallery;
         View view = LayoutInflater.from(context).inflate(layoutId, parent, false);
         return new ViewHolder(view);
     }
@@ -50,16 +47,19 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
                 .placeholder(R.mipmap.ic_launcher)
                 .into(holder.imageView);
 
+        // গ্যালারি মোডে সেন্টার ক্রপ, কিন্তু হোমে ফিট (Pinterest Style)
         if (!isFeed) {
             holder.imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        } else {
+            holder.imageView.setAdjustViewBounds(true);
         }
 
-        // Set Texts
         holder.viewCountText.setText(item.getViewCount() + "");
 
-        // 🔥 এই লাইনটি ক্র্যাশ ঘটাচ্ছিলো কারণ XML এ itemTitle ছিল না
-        // এখন আমরা XML এ itemTitle যোগ করেছি, তাই এটি কাজ করবে।
-        holder.titleView.setText(item.getCategoryName());
+        // টাইটেল সেট করা (Crash ফিক্স)
+        if(holder.titleView != null) {
+            holder.titleView.setText(item.getCategoryName());
+        }
 
         setAnimation(holder.itemView, position);
 
@@ -92,9 +92,6 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            // এই ৩টি আইডি (itemImage, itemTitle, itemViewCount)
-            // অবশ্যই আপনার layout_item_feed.xml এবং layout_item_gallery.xml
-            // উভয় ফাইলেই থাকতে হবে।
             imageView = itemView.findViewById(R.id.itemImage);
             titleView = itemView.findViewById(R.id.itemTitle);
             viewCountText = itemView.findViewById(R.id.itemViewCount);
