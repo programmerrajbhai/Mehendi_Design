@@ -5,78 +5,84 @@ import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.ScaleAnimation;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.bumptech.glide.Glide;
 import com.softdesk.mehendidesign.R;
 import com.softdesk.mehendidesign.models.CategoryModel;
-
+import com.softdesk.mehendidesign.ui.GalleryActivity;
 import java.util.List;
 
 public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHolder> {
 
     Context context;
-    List<CategoryModel> list;
+    List<CategoryModel> categoryList;
+    int lastPosition = -1;
 
-    public CategoryAdapter(Context context, List<CategoryModel> list) {
+    public CategoryAdapter(Context context, List<CategoryModel> categoryList) {
         this.context = context;
-        this.list = list;
+        this.categoryList = categoryList;
     }
 
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // layout_item_category.xml ta niche banabo
-        View view = LayoutInflater.from(context).inflate(R.layout.layout_item_category, parent, false);
+        // 🔥 Using the new Wide Card Layout
+        View view = LayoutInflater.from(context).inflate(R.layout.item_category_card, parent, false);
         return new ViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        CategoryModel model = list.get(position);
-        holder.catName.setText(model.getTitle());
+        CategoryModel item = categoryList.get(position);
 
-        int resourceId = context.getResources().getIdentifier(model.getImageUrl(), "drawable", context.getPackageName());
+        holder.title.setText(item.getTitle());
 
         Glide.with(context)
-                .load(model.getImageUrl()) // Direct URL from model
-                .placeholder(R.mipmap.ic_launcher) // Loading howa porjonto eta dekhabe
-                .error(R.mipmap.ic_launcher) // Link broken hole eta dekhabe
+                .load(item.getImageUrl())
                 .centerCrop()
-                .into(holder.catImage);
+                .placeholder(R.mipmap.ic_launcher)
+                .into(holder.image);
+
+        // 🔥 BEAUTIFUL ANIMATION (Scale Up)
+        setAnimation(holder.itemView, position);
 
         holder.itemView.setOnClickListener(v -> {
-            Intent intent = new Intent(context, com.softdesk.mehendidesign.ui.GalleryActivity.class);
-            intent.putExtra("CAT_ID", model.getId()); // ID pathacchi
-            intent.putExtra("CAT_TITLE", model.getTitle()); // Title pathacchi
-
+            Intent intent = new Intent(context, GalleryActivity.class);
+            intent.putExtra("CAT_ID", item.getId());
+            intent.putExtra("CAT_TITLE", item.getTitle());
             context.startActivity(intent);
-
-            // --- ACTIVITY SLIDE ANIMATION ---
-            if (context instanceof android.app.Activity) {
-                ((android.app.Activity) context).overridePendingTransition(R.anim.slide_in_right, R.anim.slide_out_left);
-            }
         });
     }
 
-    @Override
-    public int getItemCount() {
-        return list.size();
+    // --- Animation Logic ---
+    private void setAnimation(View viewToAnimate, int position) {
+        if (position > lastPosition) {
+            ScaleAnimation anim = new ScaleAnimation(0.0f, 1.0f, 0.0f, 1.0f,
+                    Animation.RELATIVE_TO_SELF, 0.5f,
+                    Animation.RELATIVE_TO_SELF, 0.5f);
+            anim.setDuration(500); // 0.5 second duration
+            viewToAnimate.startAnimation(anim);
+            lastPosition = position;
+        }
     }
 
+    @Override
+    public int getItemCount() { return categoryList.size(); }
+
     public class ViewHolder extends RecyclerView.ViewHolder {
-        ImageView catImage;
-        TextView catName;
+        ImageView image;
+        TextView title;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            catImage = itemView.findViewById(R.id.itemImage);
-            catName = itemView.findViewById(R.id.itemTitle);
+            image = itemView.findViewById(R.id.catImage);
+            title = itemView.findViewById(R.id.catTitle);
         }
     }
 }

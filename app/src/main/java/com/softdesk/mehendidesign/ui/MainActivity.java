@@ -11,14 +11,16 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.recyclerview.widget.LinearLayoutManager; // Import This
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
 import com.facebook.shimmer.ShimmerFrameLayout;
-import com.google.android.material.bottomnavigation.BottomNavigationView; // Standard
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationView;
 import com.softdesk.mehendidesign.R;
 import com.softdesk.mehendidesign.adapters.CategoryAdapter;
+import com.softdesk.mehendidesign.adapters.ImageAdapter;
 import com.softdesk.mehendidesign.data.MockDatabase;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
@@ -26,7 +28,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     DrawerLayout drawerLayout;
     NavigationView navigationView;
     RecyclerView recyclerView;
-    CategoryAdapter adapter;
     BottomNavigationView bottomNav;
     ShimmerFrameLayout shimmerFrameLayout;
 
@@ -35,10 +36,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // UI Initialization
+        // --- Init UI ---
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        if (getSupportActionBar() != null) getSupportActionBar().setTitle("Mehndi Design");
+        if (getSupportActionBar() != null) getSupportActionBar().setTitle("Mehndi Feed");
 
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
@@ -46,11 +47,15 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         recyclerView = findViewById(R.id.homeRecyclerView);
         bottomNav = findViewById(R.id.bottomNav);
 
-        // --- BOTTOM NAVIGATION CLICK LOGIC ---
+        // --- BOTTOM NAV LISTENER ---
         bottomNav.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
+
             if (id == R.id.nav_home) {
-                // Home Logic
+                loadHomeFeed(); // 2 Columns (Pinterest Style)
+                return true;
+            } else if (id == R.id.nav_categories) {
+                loadCategories(); // 1 Column (Wide Card Style)
                 return true;
             } else if (id == R.id.nav_fav) {
                 Toast.makeText(this, "Favorites", Toast.LENGTH_SHORT).show();
@@ -69,22 +74,47 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         toggle.syncState();
         navigationView.setNavigationItemSelectedListener(this);
 
-        // --- DATA LOADING ---
-        shimmerFrameLayout.startShimmer();
+        // Start with Home
+        loadHomeFeed();
+    }
 
+    // --- 1. Load Home Feed (2 Columns Pinterest) ---
+    private void loadHomeFeed() {
+        if (getSupportActionBar() != null) getSupportActionBar().setTitle("Latest Designs");
+        showShimmer();
+
+        // 🔥 Span Count 2 (এক লাইনে ২টা)
         StaggeredGridLayoutManager manager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
         manager.setGapStrategy(StaggeredGridLayoutManager.GAP_HANDLING_MOVE_ITEMS_BETWEEN_SPANS);
         recyclerView.setLayoutManager(manager);
 
-        adapter = new CategoryAdapter(this, MockDatabase.getCategories());
+        // Pass 'true' for Feed Layout
+        ImageAdapter adapter = new ImageAdapter(this, MockDatabase.getPopularDesigns(), true);
         recyclerView.setAdapter(adapter);
+    }
 
-        // Fake Delay
+    // --- 2. Load Categories (1 Column Wide Card) ---
+    private void loadCategories() {
+        if (getSupportActionBar() != null) getSupportActionBar().setTitle("Categories");
+        showShimmer();
+
+        // 🔥 Linear Layout (এক লাইনে ১টা - উপর থেকে নিচে)
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        CategoryAdapter adapter = new CategoryAdapter(this, MockDatabase.getCategories());
+        recyclerView.setAdapter(adapter);
+    }
+
+    private void showShimmer() {
+        recyclerView.setVisibility(View.GONE);
+        shimmerFrameLayout.setVisibility(View.VISIBLE);
+        shimmerFrameLayout.startShimmer();
+
         new Handler().postDelayed(() -> {
             shimmerFrameLayout.stopShimmer();
             shimmerFrameLayout.setVisibility(View.GONE);
             recyclerView.setVisibility(View.VISIBLE);
-        }, 1500);
+        }, 600);
     }
 
     @Override
