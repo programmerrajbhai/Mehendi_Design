@@ -1,21 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
+
     <item
         android:id="@+id/nav_home"
-        android:icon="@drawable/ic_launcher_foreground"
-        android:title="Home" /> <item
-    android:id="@+id/nav_categories"
-    android:icon="@android:drawable/ic_menu_sort_by_size"
-    android:title="Category" />
+        android:icon="@drawable/ic_nav_home"
+        android:title="Home" />
 
+    <item
+        android:id="@+id/nav_categories"
+        android:icon="@drawable/ic_nav_category"
+        android:title="Categories" />
 
     <item
         android:id="@+id/nav_fav"
-        android:icon="@android:drawable/btn_star"
-        android:title="Fav" />
+        android:icon="@drawable/ic_nav_fav"
+        android:title="Favorites" />
 
     <item
         android:id="@+id/nav_download"
-        android:icon="@android:drawable/stat_sys_download"
+        android:icon="@drawable/ic_nav_saved"
         android:title="Saved" />
+
 </menu>

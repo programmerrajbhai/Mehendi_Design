@@ -1,19 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
+
     <item
         android:id="@+id/nav_drawer_home"
-        android:icon="@drawable/ic_launcher_foreground"
+        android:icon="@drawable/ic_drawer_home"
         android:title="Home" />
+
     <item
         android:id="@+id/nav_rate"
-        android:icon="@android:drawable/star_on"
+        android:icon="@drawable/ic_drawer_rate"
         android:title="Rate this App" />
+
     <item
         android:id="@+id/nav_privacy"
-        android:icon="@android:drawable/ic_menu_info_details"
+        android:icon="@drawable/ic_drawer_privacy"
         android:title="Privacy Policy" />
+
     <item
         android:id="@+id/nav_report"
-        android:icon="@android:drawable/ic_dialog_alert"
-        android:title="Report an issue" />
+        android:icon="@drawable/ic_drawer_report"
+        android:title="Report an Issue" />
+
 </menu>
