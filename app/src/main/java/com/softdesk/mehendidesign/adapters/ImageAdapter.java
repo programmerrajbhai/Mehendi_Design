@@ -42,36 +42,47 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         DesignItem item = designList.get(position);
 
+        // ইমেজ লোড করা
         Glide.with(context)
                 .load(item.getImageUrl())
-                .placeholder(R.drawable.placeholder_bg)
+                // .placeholder(R.drawable.placeholder_bg) // আপনার যদি placeholder থাকে তবে আন-কমেন্ট করুন
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
                 .into(holder.imageView);
 
+        // লেআউট অনুযায়ী স্কেলিং
         if (!isFeed) {
             holder.imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
         } else {
             holder.imageView.setAdjustViewBounds(true);
         }
 
+        // ভিউ কাউন্ট সেট করা
         if (holder.viewCountText != null) {
             holder.viewCountText.setText(String.valueOf(item.getViewCount()));
         }
 
+        // টাইটেল সেট করা
         if(holder.titleView != null) {
             holder.titleView.setText(item.getCategoryName());
         }
 
+        // এনিমেশন
         setAnimation(holder.itemView, position);
 
+        // 🔥 আপডেট করা ক্লিক লিসেনার (সোয়াইপ এর জন্য)
         holder.itemView.setOnClickListener(v -> {
+            // ১. ভিউ কাউন্ট আপডেট (অপশনাল, শুধু লোকালে দেখানোর জন্য)
             int newCount = item.getViewCount() + 1;
             item.setViewCount(newCount);
             notifyItemChanged(holder.getAdapterPosition());
 
+            // ২. গ্লোবাল লিস্টে ডাটা পাঠানো (যাতে FullViewActivity তে সোয়াইপ কাজ করে)
+            // এটি FullViewActivity তে আমরা static হিসেবে ডিক্লেয়ার করেছি
+            FullViewActivity.sDesignList = designList;
+
+            // ৩. পজিশন সহ ফুল ভিউ অ্যাক্টিভিটি চালু করা
             Intent intent = new Intent(context, FullViewActivity.class);
-            intent.putExtra("IMAGE_URL", item.getImageUrl());
-            intent.putExtra("IMAGE_NAME", item.getCategoryName());
+            intent.putExtra("POSITION", holder.getAdapterPosition()); // ক্লিক করা ইমেজের পজিশন
             context.startActivity(intent);
         });
     }

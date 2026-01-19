@@ -71,8 +71,18 @@
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        android:background="#FFFFFF"
-        app:headerLayout="@layout/nav_header"
-        app:menu="@menu/drawer_menu" />
 
+        android:background="#1a0000"
+        app:headerLayout="@layout/nav_header"
+        app:menu="@menu/drawer_menu"
+
+        app:itemIconTint="@color/nav_item_colors"
+        app:itemTextColor="@color/nav_item_colors"
+        app:itemBackground="@drawable/bg_nav_item_selection"
+
+        app:itemIconPadding="15dp"
+        app:itemHorizontalPadding="20dp"
+        app:itemIconSize="24dp"
+
+        android:fitsSystemWindows="true" />
 </androidx.drawerlayout.widget.DrawerLayout>

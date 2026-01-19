@@ -2,122 +2,147 @@ package com.softdesk.mehendidesign.ui;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
-import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.viewpager2.widget.ViewPager2;
+
 import com.bumptech.glide.Glide;
-import com.github.chrisbanes.photoview.PhotoView;
+import com.bumptech.glide.request.target.CustomTarget;
+import com.bumptech.glide.request.transition.Transition;
 import com.softdesk.mehendidesign.R;
+import com.softdesk.mehendidesign.adapters.FullViewAdapter;
+import com.softdesk.mehendidesign.models.DesignItem;
 import com.softdesk.mehendidesign.utils.FavoriteManager;
+
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 public class FullViewActivity extends AppCompatActivity {
 
-    PhotoView photoView;
-    String imageUrl;
+    // 🔥 স্ট্যাটিক লিস্ট (লিস্ট পাঠানোর সহজ উপায়)
+    public static List<DesignItem> sDesignList = new ArrayList<>();
+
+    ViewPager2 viewPager;
     LinearLayout btnDownload, btnShare, btnFav;
     ImageButton btnBack;
     ImageView iconFav, iconDownload;
     TextView textFav, textDownload;
 
     FavoriteManager favoriteManager;
-    boolean isFav = false;
-    boolean isAlreadySaved = false;
+    DesignItem currentItem; // বর্তমানে যে ইমেজটা দেখাচ্ছে
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        hideSystemUI(); // Fullscreen
+        hideSystemUI();
         setContentView(R.layout.activity_full_view);
 
         favoriteManager = new FavoriteManager(this);
 
-        // Init Views
-        photoView = findViewById(R.id.photoView);
+        // View Init
+        viewPager = findViewById(R.id.viewPager);
         btnDownload = findViewById(R.id.btnDownload);
         btnShare = findViewById(R.id.btnShare);
         btnFav = findViewById(R.id.btnFav);
         btnBack = findViewById(R.id.btnBack);
 
-        // Get Icons & Texts inside buttons
+        // Icons & Text
         iconFav = (ImageView) ((LinearLayout) btnFav).getChildAt(0);
         textFav = (TextView) ((LinearLayout) btnFav).getChildAt(1);
-
         iconDownload = (ImageView) ((LinearLayout) btnDownload).getChildAt(0);
         textDownload = (TextView) ((LinearLayout) btnDownload).getChildAt(1);
 
-        // Load Image
-        imageUrl = getIntent().getStringExtra("IMAGE_URL");
-        Glide.with(this).load(imageUrl).into(photoView);
+        // 🔥 ১. ইনটেন্ট থেকে পজিশন নেওয়া
+        int position = getIntent().getIntExtra("POSITION", 0);
 
-        // 🔥 Check if Image is Online or Offline
-        checkIfOfflineImage();
+        // 🔥 ২. অ্যাডাপ্টার সেট করা
+        if (sDesignList != null && !sDesignList.isEmpty()) {
+            FullViewAdapter adapter = new FullViewAdapter(this, sDesignList);
+            viewPager.setAdapter(adapter);
+            viewPager.setCurrentItem(position, false); // ক্লিক করা ইমেজে জাম্প করা
 
-        checkFavoriteState();
+            // প্রথমবার লোড করার জন্য ম্যানুয়ালি কল করা
+            onPageChanged(position);
+        } else {
+            Toast.makeText(this, "Error loading images", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
 
-        // --- CLICK LISTENERS ---
+        // 🔥 ৩. সোয়াইপ লিসেনার (পেজ চেঞ্জ হলে বাটন আপডেট হবে)
+        viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageSelected(int position) {
+                super.onPageSelected(position);
+                onPageChanged(position);
+            }
+        });
 
-        // 1. SAVE BUTTON
+        // --- BUTTON ACTIONS ---
+
+        // Save Button
         btnDownload.setOnClickListener(v -> {
-            if (isAlreadySaved) {
+            if (currentItem == null) return;
+            if (isOfflineImage(currentItem.getImageUrl())) {
                 Toast.makeText(this, "Already Downloaded!", Toast.LENGTH_SHORT).show();
-                return;
+            } else {
+                downloadAndSaveImage(currentItem.getImageUrl());
             }
-            if (photoView.getDrawable() == null) {
-                Toast.makeText(this, "Loading...", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            Bitmap bitmap = ((BitmapDrawable) photoView.getDrawable()).getBitmap();
-            saveImagePrivate(bitmap);
         });
 
-        // 2. SHARE BUTTON
+        // Share Button
         btnShare.setOnClickListener(v -> {
-            if (photoView.getDrawable() == null) return;
-            shareImage(((BitmapDrawable) photoView.getDrawable()).getBitmap());
+            if (currentItem == null) return;
+            downloadAndShareImage(currentItem.getImageUrl());
         });
 
-        // 3. FAV BUTTON
+        // Fav Button
         btnFav.setOnClickListener(v -> {
-            if (isFav) {
-                favoriteManager.removeFavorite(imageUrl);
+            if (currentItem == null) return;
+            String url = currentItem.getImageUrl();
+
+            if (favoriteManager.isFavorite(url)) {
+                favoriteManager.removeFavorite(url);
                 Toast.makeText(this, "Removed from Favorites", Toast.LENGTH_SHORT).show();
             } else {
-                favoriteManager.addFavorite(imageUrl);
+                favoriteManager.addFavorite(url);
                 Toast.makeText(this, "Added to Favorites ❤️", Toast.LENGTH_SHORT).show();
             }
-            checkFavoriteState();
+            updateButtonsState(); // বাটন রিফ্রেশ
         });
 
-        // 4. BACK
         btnBack.setOnClickListener(v -> onBackPressed());
     }
 
-    private void checkIfOfflineImage() {
-        if (!imageUrl.startsWith("http")) {
-            isAlreadySaved = true;
-
-             iconDownload.setImageResource(android.R.drawable.checkbox_on_background);
-            textDownload.setText("Saved");
-            btnDownload.setAlpha(0.6f);
-
+    // 🔥 পেজ চেঞ্জ হলে ডাটা আপডেট করার মেথড
+    private void onPageChanged(int position) {
+        if (sDesignList != null && position < sDesignList.size()) {
+            currentItem = sDesignList.get(position);
+            updateButtonsState();
         }
     }
 
-    private void checkFavoriteState() {
-        isFav = favoriteManager.isFavorite(imageUrl);
-        if (isFav) {
+    private void updateButtonsState() {
+        if (currentItem == null) return;
+        String url = currentItem.getImageUrl();
+
+        // Check Favorite
+        if (favoriteManager.isFavorite(url)) {
             iconFav.setImageResource(android.R.drawable.star_big_on);
             iconFav.setColorFilter(getResources().getColor(android.R.color.holo_orange_light));
             textFav.setText("Saved");
@@ -126,6 +151,37 @@ public class FullViewActivity extends AppCompatActivity {
             iconFav.setColorFilter(getResources().getColor(android.R.color.white));
             textFav.setText("Favorite");
         }
+
+        // Check Download
+        if (isOfflineImage(url)) {
+            iconDownload.setImageResource(android.R.drawable.checkbox_on_background);
+            textDownload.setText("Saved");
+            btnDownload.setAlpha(0.6f);
+        } else {
+            iconDownload.setImageResource(android.R.drawable.stat_sys_download);
+            textDownload.setText("Save");
+            btnDownload.setAlpha(1.0f);
+        }
+    }
+
+    private boolean isOfflineImage(String url) {
+        return !url.startsWith("http");
+    }
+
+    // 🔥 Glide ব্যবহার করে ইমেজ ডাউনলোড এবং সেভ
+    private void downloadAndSaveImage(String url) {
+        Toast.makeText(this, "Saving...", Toast.LENGTH_SHORT).show();
+        Glide.with(this)
+                .asBitmap()
+                .load(url)
+                .into(new CustomTarget<Bitmap>() {
+                    @Override
+                    public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
+                        saveImagePrivate(resource);
+                    }
+                    @Override
+                    public void onLoadCleared(@Nullable Drawable placeholder) {}
+                });
     }
 
     private void saveImagePrivate(Bitmap bitmap) {
@@ -143,15 +199,31 @@ public class FullViewActivity extends AppCompatActivity {
 
             Toast.makeText(this, "Saved for Offline! ✅", Toast.LENGTH_SHORT).show();
 
-            // সাথে সাথে বাটন আপডেট করে দিচ্ছি
-            isAlreadySaved = true;
+            // বাটন আপডেট UI চেঞ্জ
             iconDownload.setImageResource(android.R.drawable.checkbox_on_background);
             textDownload.setText("Saved");
+            btnDownload.setAlpha(0.6f);
 
         } catch (Exception e) {
             e.printStackTrace();
             Toast.makeText(this, "Failed to save image.", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    // 🔥 শেয়ার ফাংশন
+    private void downloadAndShareImage(String url) {
+        Toast.makeText(this, "Preparing Share...", Toast.LENGTH_SHORT).show();
+        Glide.with(this)
+                .asBitmap()
+                .load(url)
+                .into(new CustomTarget<Bitmap>() {
+                    @Override
+                    public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
+                        shareImage(resource);
+                    }
+                    @Override
+                    public void onLoadCleared(@Nullable Drawable placeholder) {}
+                });
     }
 
     private void shareImage(Bitmap bitmap) {
