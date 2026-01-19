@@ -18,7 +18,6 @@
             android:layout_height="wrap_content"
             android:adjustViewBounds="true"
             android:scaleType="fitXY"
-            android:src="@mipmap/ic_launcher"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"/>
 
@@ -69,8 +68,7 @@
                 <ImageView
                     android:layout_width="10dp"
                     android:layout_height="10dp"
-                    android:src="@android:drawable/ic_menu_view"
-                    app:tint="#FFFFFF"/>
+                   app:tint="#FFFFFF"/>
 
                 <TextView
                     android:id="@+id/itemViewCount"

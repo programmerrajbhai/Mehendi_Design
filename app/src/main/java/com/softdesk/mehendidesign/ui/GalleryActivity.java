@@ -23,7 +23,7 @@ public class GalleryActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_gallery);
+        setContentView(R.layout.activity_gallery); // XML লোড হচ্ছে
 
         // ইনটেন্ট থেকে ডাটা নেওয়া
         folderPrefix = getIntent().getStringExtra("CAT_ID");
@@ -45,33 +45,43 @@ public class GalleryActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         if (getSupportActionBar() != null) {
-            // টাইটেল থেকে স্ল্যাশ (/) সরিয়ে সুন্দর করে দেখানো
             String cleanTitle = (title != null) ? title.replace("/", "") : "Gallery";
             getSupportActionBar().setTitle(cleanTitle);
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setHomeButtonEnabled(true);
         }
 
+        // View Finding
         shimmerFrameLayout = findViewById(R.id.shimmerViewContainer);
         recyclerView = findViewById(R.id.homeRecyclerView);
 
-        // ৩ কলামের গ্রিড লেআউট (সুন্দর দেখাবে)
+        // 3 Column Grid Layout
         recyclerView.setLayoutManager(new GridLayoutManager(this, 3));
     }
 
     private void loadImagesFromCloud() {
-        shimmerFrameLayout.setVisibility(View.VISIBLE);
-        shimmerFrameLayout.startShimmer();
-        recyclerView.setVisibility(View.GONE);
+        // 🔥 CRASH FIX: নাল চেক যোগ করা হলো
+        if (shimmerFrameLayout != null) {
+            shimmerFrameLayout.setVisibility(View.VISIBLE);
+            shimmerFrameLayout.startShimmer();
+        }
+
+        if (recyclerView != null) {
+            recyclerView.setVisibility(View.GONE);
+        }
 
         r2Manager.fetchImagesByCategory(folderPrefix, designs -> {
-            // লোডিং বন্ধ
-            shimmerFrameLayout.stopShimmer();
-            shimmerFrameLayout.setVisibility(View.GONE);
-            recyclerView.setVisibility(View.VISIBLE);
+            // Loading Stop
+            if (shimmerFrameLayout != null) {
+                shimmerFrameLayout.stopShimmer();
+                shimmerFrameLayout.setVisibility(View.GONE);
+            }
+
+            if (recyclerView != null) {
+                recyclerView.setVisibility(View.VISIBLE);
+            }
 
             if (designs != null && !designs.isEmpty()) {
-                // Adapter সেট করা
                 ImageAdapter adapter = new ImageAdapter(GalleryActivity.this, designs, false);
                 recyclerView.setAdapter(adapter);
             } else {
@@ -83,7 +93,7 @@ public class GalleryActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
-            onBackPressed(); // ব্যাক বাটন কাজ করবে
+            onBackPressed();
             return true;
         }
         return super.onOptionsItemSelected(item);
