@@ -19,3 +19,9 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# AWS SDK এর জন্য রুলস (R2 এর জন্য দরকার)
+-keep class com.amazonaws.** { *; }
+-dontwarn com.amazonaws.**
+-keep class org.apache.** { *; }
+-dontwarn org.apache.**

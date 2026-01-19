@@ -18,9 +18,11 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true  // 🔥 এটি true করুন
+            shrinkResources true // 🔥 এটিও true করুন
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
