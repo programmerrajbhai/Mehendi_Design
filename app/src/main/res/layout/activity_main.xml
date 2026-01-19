@@ -68,6 +68,7 @@
                 android:padding="6dp"
                 android:paddingBottom="80dp"
                 android:visibility="gone"/>
+
         </FrameLayout>
 
         <com.google.android.material.bottomnavigation.BottomNavigationView
