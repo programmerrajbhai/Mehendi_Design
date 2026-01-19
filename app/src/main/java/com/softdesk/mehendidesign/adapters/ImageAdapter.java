@@ -46,7 +46,7 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ViewHolder> 
         // 🖼️ ইমেজ লোড করা (Glide দিয়ে অপটিমাইজড)
         Glide.with(context)
                 .load(item.getImageUrl())
-                .placeholder(R.drawable.ic_launcher_background) // প্লেসহোল্ডার (আপনার ড্রয়েবল অনুযায়ী দিন)
+                .placeholder(R.drawable.placeholder_bg) // প্লেসহোল্ডার (আপনার ড্রয়েবল অনুযায়ী দিন)
                 .diskCacheStrategy(DiskCacheStrategy.ALL) // ক্যাশিং অন রাখা যাতে ফাস্ট লোড হয়
                 .into(holder.imageView);
 

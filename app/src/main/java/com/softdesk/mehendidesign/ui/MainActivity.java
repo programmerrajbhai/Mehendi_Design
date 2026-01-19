@@ -51,10 +51,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) getSupportActionBar().setTitle("Popular Designs");
 
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
+
+        // Shimmer Layout Find
         shimmerFrameLayout = findViewById(R.id.shimmerViewContainer);
+
         recyclerView = findViewById(R.id.homeRecyclerView);
         bottomNav = findViewById(R.id.bottomNav);
 
@@ -64,14 +68,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         toggle.syncState();
         navigationView.setNavigationItemSelectedListener(this);
 
-        // Bottom Navigation Logic
         bottomNav.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
             if (id == R.id.nav_home) {
-                loadHomeFeed(); // Latest designs
+                loadHomeFeed();
                 return true;
             } else if (id == R.id.nav_categories) {
-                loadCategoriesFromR2(); // Folder wise categories
+                loadCategoriesFromR2();
                 return true;
             } else if (id == R.id.nav_fav) {
                 loadFavorites();
@@ -83,71 +86,65 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             return false;
         });
 
-        // App open holei prothome Home Feed load hobe
         loadHomeFeed();
     }
 
-    // --- 1. HOME FEED (Default Folder Load kora) ---
+    // --- 1. POPULAR / HOME FEED ---
     private void loadHomeFeed() {
-        if (getSupportActionBar() != null) getSupportActionBar().setTitle("Latest Designs");
+        if (getSupportActionBar() != null) getSupportActionBar().setTitle("Popular Designs");
+
+        // লোডিং শুরু (Shimmer On)
         startLoading();
 
-        // 🔥 "New/" folder theke data anbe. Jodi "New" na thake, tobe "Bridal/" try korbe.
-        r2Manager.fetchImagesByCategory("New/", designs -> {
+        r2Manager.fetchAllDesigns(designs -> {
+            // ডাটা আসার পর লোডিং বন্ধ (Shimmer Off)
+            stopLoading();
+
             if (designs != null && !designs.isEmpty()) {
                 StaggeredGridLayoutManager manager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
                 manager.setGapStrategy(StaggeredGridLayoutManager.GAP_HANDLING_MOVE_ITEMS_BETWEEN_SPANS);
                 recyclerView.setLayoutManager(manager);
                 recyclerView.setAdapter(new ImageAdapter(MainActivity.this, designs, true));
             } else {
-                // Jodi New folder faka thake, taile Bridal load kori
-                r2Manager.fetchImagesByCategory("Bridal/", backupDesigns -> {
-                    if (backupDesigns != null && !backupDesigns.isEmpty()) {
-                        StaggeredGridLayoutManager manager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
-                        recyclerView.setLayoutManager(manager);
-                        recyclerView.setAdapter(new ImageAdapter(MainActivity.this, backupDesigns, true));
-                    } else {
-                        Toast.makeText(MainActivity.this, "No designs found.", Toast.LENGTH_SHORT).show();
-                    }
-                });
+                Toast.makeText(MainActivity.this, "No designs found.", Toast.LENGTH_SHORT).show();
             }
-            stopLoading();
         });
     }
 
-    // --- 2. CATEGORIES (Sob Folder list kora) ---
+    // --- 2. CATEGORIES ---
     private void loadCategoriesFromR2() {
         if (getSupportActionBar() != null) getSupportActionBar().setTitle("Categories");
         startLoading();
 
-        // 🔥 Bucket er sob folder fetch kore anbe
         r2Manager.fetchCategories(categories -> {
+            stopLoading();
             if (categories != null && !categories.isEmpty()) {
                 recyclerView.setLayoutManager(new LinearLayoutManager(MainActivity.this));
                 recyclerView.setAdapter(new CategoryAdapter(MainActivity.this, categories));
             } else {
                 Toast.makeText(MainActivity.this, "No Categories Found", Toast.LENGTH_SHORT).show();
             }
-            stopLoading();
         });
     }
 
     private void loadFavorites() {
         if (getSupportActionBar() != null) getSupportActionBar().setTitle("My Favorites");
-        recyclerView.setVisibility(View.VISIBLE);
-        shimmerFrameLayout.setVisibility(View.GONE);
+        // ফেভারিট লোড করার সময় শিমার দরকার নেই, তাই সরাসরি বন্ধ করছি
+        stopLoading();
+
         List<String> favUrls = favoriteManager.getAllFavorites();
         List<DesignItem> favItems = new ArrayList<>();
         for (String url : favUrls) { favItems.add(new DesignItem(url, "Favorite", 0)); }
         Collections.reverse(favItems);
+
         recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
         recyclerView.setAdapter(new ImageAdapter(this, favItems, false));
     }
 
     private void loadPrivateDownloads() {
         if (getSupportActionBar() != null) getSupportActionBar().setTitle("Saved");
-        recyclerView.setVisibility(View.VISIBLE);
-        shimmerFrameLayout.setVisibility(View.GONE);
+        stopLoading();
+
         File folder = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "SavedDesigns");
         List<DesignItem> downloadedItems = new ArrayList<>();
         if (folder.exists() && folder.listFiles() != null) {
@@ -162,16 +159,21 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         recyclerView.setAdapter(new ImageAdapter(this, downloadedItems, false));
     }
 
+    // ✅ সুন্দরভাবে লোডিং হ্যান্ডেল করার মেথড
     private void startLoading() {
-        recyclerView.setVisibility(View.GONE);
-        shimmerFrameLayout.setVisibility(View.VISIBLE);
-        shimmerFrameLayout.startShimmer();
+        if (recyclerView != null) recyclerView.setVisibility(View.GONE);
+        if (shimmerFrameLayout != null) {
+            shimmerFrameLayout.setVisibility(View.VISIBLE);
+            shimmerFrameLayout.startShimmer(); // অ্যানিমেশন শুরু
+        }
     }
 
     private void stopLoading() {
-        shimmerFrameLayout.stopShimmer();
-        shimmerFrameLayout.setVisibility(View.GONE);
-        recyclerView.setVisibility(View.VISIBLE);
+        if (shimmerFrameLayout != null) {
+            shimmerFrameLayout.stopShimmer(); // অ্যানিমেশন বন্ধ
+            shimmerFrameLayout.setVisibility(View.GONE);
+        }
+        if (recyclerView != null) recyclerView.setVisibility(View.VISIBLE);
     }
 
     @Override

@@ -46,7 +46,7 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
         Glide.with(context)
                 .load(item.getImageUrl())
                 .centerCrop()
-                .placeholder(R.mipmap.ic_launcher)
+                .placeholder(R.drawable.placeholder_bg)
                 .into(holder.image);
 
         // 🔥 BEAUTIFUL ANIMATION (Scale Up)
