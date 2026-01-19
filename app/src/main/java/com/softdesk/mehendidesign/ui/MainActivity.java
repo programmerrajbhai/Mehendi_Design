@@ -2,7 +2,6 @@ package com.softdesk.mehendidesign.ui;
 
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
@@ -23,9 +22,9 @@ import com.google.android.material.navigation.NavigationView;
 import com.softdesk.mehendidesign.R;
 import com.softdesk.mehendidesign.adapters.CategoryAdapter;
 import com.softdesk.mehendidesign.adapters.ImageAdapter;
-import com.softdesk.mehendidesign.data.MockDatabase;
 import com.softdesk.mehendidesign.models.DesignItem;
 import com.softdesk.mehendidesign.utils.FavoriteManager;
+import com.softdesk.mehendidesign.utils.R2DataManager;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -40,15 +39,16 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     BottomNavigationView bottomNav;
     ShimmerFrameLayout shimmerFrameLayout;
     FavoriteManager favoriteManager;
+    R2DataManager r2Manager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        r2Manager = new R2DataManager(this);
         favoriteManager = new FavoriteManager(this);
 
-        // UI Setup
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) getSupportActionBar().setTitle("Mehndi Feed");
@@ -59,141 +59,114 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         recyclerView = findViewById(R.id.homeRecyclerView);
         bottomNav = findViewById(R.id.bottomNav);
 
-        // Drawer
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         toggle.getDrawerArrowDrawable().setColor(getResources().getColor(android.R.color.black));
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
         navigationView.setNavigationItemSelectedListener(this);
 
-        // --- BOTTOM NAV LISTENER ---
         bottomNav.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
-
             if (id == R.id.nav_home) {
                 loadHomeFeed();
                 return true;
             } else if (id == R.id.nav_categories) {
-                loadCategories();
+                loadCategoriesFromR2();
                 return true;
             } else if (id == R.id.nav_fav) {
                 loadFavorites();
                 return true;
-            } else if (id == R.id.nav_download) { // SAVED TAB
-                loadPrivateDownloads(); // 🔥 NO PERMISSION NEEDED
+            } else if (id == R.id.nav_download) {
+                loadPrivateDownloads();
                 return true;
             }
             return false;
         });
 
-        // Default Load
         loadHomeFeed();
     }
 
-    // --- HOME FEED ---
+    // --- 1. HOME FEED ---
     private void loadHomeFeed() {
         if (getSupportActionBar() != null) getSupportActionBar().setTitle("Latest Designs");
-        showShimmer();
+        startLoading();
 
-        StaggeredGridLayoutManager manager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
-        manager.setGapStrategy(StaggeredGridLayoutManager.GAP_HANDLING_MOVE_ITEMS_BETWEEN_SPANS);
-        recyclerView.setLayoutManager(manager);
-        recyclerView.setAdapter(new ImageAdapter(this, MockDatabase.getPopularDesigns(), true));
+        // ডিফল্ট হিসেবে "Bridal/" ফোল্ডারের ছবি হোমে লোড হবে
+        r2Manager.fetchImagesByCategory("Bridal/", designs -> {
+            if (designs != null && !designs.isEmpty()) {
+                StaggeredGridLayoutManager manager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
+                manager.setGapStrategy(StaggeredGridLayoutManager.GAP_HANDLING_MOVE_ITEMS_BETWEEN_SPANS);
+                recyclerView.setLayoutManager(manager);
+                recyclerView.setAdapter(new ImageAdapter(MainActivity.this, designs, true));
+            } else {
+                Toast.makeText(MainActivity.this, "Check internet or R2 folder!", Toast.LENGTH_SHORT).show();
+            }
+            stopLoading();
+        });
     }
 
-    // --- CATEGORIES ---
-    private void loadCategories() {
+    // --- 2. CATEGORIES ---
+    private void loadCategoriesFromR2() {
         if (getSupportActionBar() != null) getSupportActionBar().setTitle("Categories");
-        showShimmer();
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        recyclerView.setAdapter(new CategoryAdapter(this, MockDatabase.getCategories()));
+        startLoading();
+
+        r2Manager.fetchCategories(categories -> {
+            if (categories != null && !categories.isEmpty()) {
+                recyclerView.setLayoutManager(new LinearLayoutManager(MainActivity.this));
+                recyclerView.setAdapter(new CategoryAdapter(MainActivity.this, categories));
+            } else {
+                Toast.makeText(MainActivity.this, "No Categories Found", Toast.LENGTH_SHORT).show();
+            }
+            stopLoading();
+        });
     }
 
-    // --- FAVORITES ---
+    // --- Favorites & Downloads (As is) ---
     private void loadFavorites() {
         if (getSupportActionBar() != null) getSupportActionBar().setTitle("My Favorites");
-        showShimmer();
-
+        recyclerView.setVisibility(View.VISIBLE);
+        shimmerFrameLayout.setVisibility(View.GONE);
         List<String> favUrls = favoriteManager.getAllFavorites();
         List<DesignItem> favItems = new ArrayList<>();
-
-        for (String url : favUrls) {
-            favItems.add(new DesignItem(url, "Favorite Design", 0));
-        }
+        for (String url : favUrls) { favItems.add(new DesignItem(url, "Favorite", 0)); }
         Collections.reverse(favItems);
-
-        if (favItems.isEmpty()) {
-            Toast.makeText(this, "No Favorites Added!", Toast.LENGTH_SHORT).show();
-        }
-
         recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
         recyclerView.setAdapter(new ImageAdapter(this, favItems, false));
     }
 
-    // --- DOWNLOADS (PRIVATE IN-APP) ---
     private void loadPrivateDownloads() {
-        if (getSupportActionBar() != null) getSupportActionBar().setTitle("In-App Saved");
-        showShimmer();
-
-        // 1. Locate the Private Folder
+        if (getSupportActionBar() != null) getSupportActionBar().setTitle("Saved");
+        recyclerView.setVisibility(View.VISIBLE);
+        shimmerFrameLayout.setVisibility(View.GONE);
         File folder = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "SavedDesigns");
         List<DesignItem> downloadedItems = new ArrayList<>();
-
-        // 2. Read Files
         if (folder.exists() && folder.listFiles() != null) {
-            File[] files = folder.listFiles();
-            for (File file : files) {
+            for (File file : folder.listFiles()) {
                 if (file.isFile() && file.getName().endsWith(".jpg")) {
-                    downloadedItems.add(new DesignItem(file.getAbsolutePath(), "Saved Design", 0));
+                    downloadedItems.add(new DesignItem(file.getAbsolutePath(), "Saved", 0));
                 }
             }
         }
-
         Collections.reverse(downloadedItems);
-
-        if (downloadedItems.isEmpty()) {
-            Toast.makeText(this, "No saved images yet!", Toast.LENGTH_SHORT).show();
-        }
-
         recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
         recyclerView.setAdapter(new ImageAdapter(this, downloadedItems, false));
     }
 
-    private void showShimmer() {
+    private void startLoading() {
         recyclerView.setVisibility(View.GONE);
         shimmerFrameLayout.setVisibility(View.VISIBLE);
         shimmerFrameLayout.startShimmer();
-        new Handler().postDelayed(() -> {
-            shimmerFrameLayout.stopShimmer();
-            shimmerFrameLayout.setVisibility(View.GONE);
-            recyclerView.setVisibility(View.VISIBLE);
-        }, 500);
+    }
+
+    private void stopLoading() {
+        shimmerFrameLayout.stopShimmer();
+        shimmerFrameLayout.setVisibility(View.GONE);
+        recyclerView.setVisibility(View.VISIBLE);
     }
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-        int id = item.getItemId();
-
-        if (id == R.id.nav_drawer_home) {
-            // হোম পেজ রিলোড বা টোস্ট
-            loadHomeFeed();
-            Toast.makeText(this, "Welcome Home! 🏠", Toast.LENGTH_SHORT).show();
-
-        } else if (id == R.id.nav_rate) {
-            // রেটিং লজিক (ভবিষ্যতে প্লে স্টোর লিংক দিতে পারেন)
-            Toast.makeText(this, "Thanks for Rating! ⭐⭐⭐⭐⭐", Toast.LENGTH_SHORT).show();
-
-        } else if (id == R.id.nav_privacy) {
-            // প্রাইভেসি পলিসি
-            Toast.makeText(this, "Opening Privacy Policy... 🔒", Toast.LENGTH_SHORT).show();
-            // Intent to open browser can be added here
-
-        } else if (id == R.id.nav_report) {
-            // রিপোর্ট ইস্যু
-            Toast.makeText(this, "Report feature coming soon! ⚠️", Toast.LENGTH_SHORT).show();
-        }
-
-        // ড্রয়ার বন্ধ করা
+        // Drawer Logic Here
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
     }

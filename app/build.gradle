@@ -47,7 +47,7 @@ dependencies {
     implementation libs.photoview
     implementation libs.shimmer
 
-
-
-
+    // AWS SDK (R2 কানেকশনের জন্য)
+    implementation 'com.amazonaws:aws-android-sdk-s3:2.73.0'
+    implementation('com.amazonaws:aws-android-sdk-mobile-client:2.73.0') { transitive = true }
 }
