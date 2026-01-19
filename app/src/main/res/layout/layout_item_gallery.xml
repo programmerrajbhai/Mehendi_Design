@@ -49,16 +49,8 @@
                 android:layout_width="12dp"
                 android:layout_height="12dp"
                 android:src="@android:drawable/ic_menu_view"
-                app:tint="#FFD700"/> <TextView
-            android:id="@+id/itemViewCount"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="2.3k"
-            android:textColor="#FFFFFF"
-            android:textSize="11sp"
-            android:textStyle="bold"
-            android:layout_marginStart="4dp"
-            android:fontFamily="sans-serif-medium"/>
+                app:tint="#FFD700"/>
+
         </LinearLayout>
 
         <LinearLayout
@@ -75,7 +67,7 @@
                 android:id="@+id/itemTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Royal Bridal Art"
+                android:text=""
                 android:textColor="#FFFFFF"
                 android:textSize="14sp"
                 android:textStyle="bold"

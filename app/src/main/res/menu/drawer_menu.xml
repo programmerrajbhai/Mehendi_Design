@@ -1,24 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_home"
+            android:icon="@drawable/ic_nav_home"
+            android:title="Home" />
 
-    <item
-        android:id="@+id/nav_drawer_home"
-        android:icon="@drawable/ic_drawer_home"
-        android:title="Home" />
+        <item
+            android:id="@+id/nav_categories"
+            android:icon="@drawable/ic_nav_category"
+            android:title="Categories" />
 
-    <item
-        android:id="@+id/nav_rate"
-        android:icon="@drawable/ic_drawer_rate"
-        android:title="Rate this App" />
+        <item
+            android:id="@+id/nav_fav"
+            android:icon="@drawable/ic_nav_fav"
+            android:title="Favorites" />
 
-    <item
-        android:id="@+id/nav_privacy"
-        android:icon="@drawable/ic_drawer_privacy"
-        android:title="Privacy Policy" />
+        <item
+            android:id="@+id/nav_download"
+            android:icon="@drawable/ic_nav_saved"
+            android:title="Saved Designs" />
+    </group>
 
-    <item
-        android:id="@+id/nav_report"
-        android:icon="@drawable/ic_drawer_report"
-        android:title="Report an Issue" />
-
+    <item android:title="Others">
+        <menu>
+            <item
+                android:id="@+id/nav_rate"
+                android:icon="@drawable/ic_drawer_rate"
+                android:title="Rate Us" />
+            <item
+                android:id="@+id/nav_privacy"
+                android:icon="@drawable/ic_drawer_privacy"
+                android:title="Privacy Policy" />
+        </menu>
+    </item>
 </menu>
