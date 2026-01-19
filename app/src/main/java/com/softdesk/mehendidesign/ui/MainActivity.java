@@ -51,7 +51,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        if (getSupportActionBar() != null) getSupportActionBar().setTitle("Mehndi Feed");
 
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
@@ -65,13 +64,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         toggle.syncState();
         navigationView.setNavigationItemSelectedListener(this);
 
+        // Bottom Navigation Logic
         bottomNav.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
             if (id == R.id.nav_home) {
-                loadHomeFeed();
+                loadHomeFeed(); // Latest designs
                 return true;
             } else if (id == R.id.nav_categories) {
-                loadCategoriesFromR2();
+                loadCategoriesFromR2(); // Folder wise categories
                 return true;
             } else if (id == R.id.nav_fav) {
                 loadFavorites();
@@ -83,33 +83,44 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             return false;
         });
 
+        // App open holei prothome Home Feed load hobe
         loadHomeFeed();
     }
 
-    // --- 1. HOME FEED ---
+    // --- 1. HOME FEED (Default Folder Load kora) ---
     private void loadHomeFeed() {
         if (getSupportActionBar() != null) getSupportActionBar().setTitle("Latest Designs");
         startLoading();
 
-        // ডিফল্ট হিসেবে "Bridal/" ফোল্ডারের ছবি হোমে লোড হবে
-        r2Manager.fetchImagesByCategory("Bridal/", designs -> {
+        // 🔥 "New/" folder theke data anbe. Jodi "New" na thake, tobe "Bridal/" try korbe.
+        r2Manager.fetchImagesByCategory("New/", designs -> {
             if (designs != null && !designs.isEmpty()) {
                 StaggeredGridLayoutManager manager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
                 manager.setGapStrategy(StaggeredGridLayoutManager.GAP_HANDLING_MOVE_ITEMS_BETWEEN_SPANS);
                 recyclerView.setLayoutManager(manager);
                 recyclerView.setAdapter(new ImageAdapter(MainActivity.this, designs, true));
             } else {
-                Toast.makeText(MainActivity.this, "Check internet or R2 folder!", Toast.LENGTH_SHORT).show();
+                // Jodi New folder faka thake, taile Bridal load kori
+                r2Manager.fetchImagesByCategory("Bridal/", backupDesigns -> {
+                    if (backupDesigns != null && !backupDesigns.isEmpty()) {
+                        StaggeredGridLayoutManager manager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
+                        recyclerView.setLayoutManager(manager);
+                        recyclerView.setAdapter(new ImageAdapter(MainActivity.this, backupDesigns, true));
+                    } else {
+                        Toast.makeText(MainActivity.this, "No designs found.", Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
             stopLoading();
         });
     }
 
-    // --- 2. CATEGORIES ---
+    // --- 2. CATEGORIES (Sob Folder list kora) ---
     private void loadCategoriesFromR2() {
         if (getSupportActionBar() != null) getSupportActionBar().setTitle("Categories");
         startLoading();
 
+        // 🔥 Bucket er sob folder fetch kore anbe
         r2Manager.fetchCategories(categories -> {
             if (categories != null && !categories.isEmpty()) {
                 recyclerView.setLayoutManager(new LinearLayoutManager(MainActivity.this));
@@ -121,7 +132,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         });
     }
 
-    // --- Favorites & Downloads (As is) ---
     private void loadFavorites() {
         if (getSupportActionBar() != null) getSupportActionBar().setTitle("My Favorites");
         recyclerView.setVisibility(View.VISIBLE);
@@ -166,7 +176,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-        // Drawer Logic Here
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
     }
