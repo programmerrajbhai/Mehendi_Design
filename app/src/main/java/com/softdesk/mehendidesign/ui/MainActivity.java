@@ -129,7 +129,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     private void loadFavorites() {
         if (getSupportActionBar() != null) getSupportActionBar().setTitle("My Favorites");
-        // ফেভারিট লোড করার সময় শিমার দরকার নেই, তাই সরাসরি বন্ধ করছি
         stopLoading();
 
         List<String> favUrls = favoriteManager.getAllFavorites();

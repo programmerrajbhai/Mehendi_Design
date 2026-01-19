@@ -16,8 +16,25 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+
+        // 🔥 ১. এই অংশটুকু যোগ করুন (defaultConfig এর ভেতরে)
+        externalNativeBuild {
+            cmake {
+                cppFlags ""
+            }
+        }
+
     }
 
+
+    // 🔥 ২. এই ব্লকটি defaultConfig এর বাইরে বসবে (এখানে path দিতে হবে)
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+         //   version "3.10.2"
+        }
+    }
 
     buildTypes {
         release {

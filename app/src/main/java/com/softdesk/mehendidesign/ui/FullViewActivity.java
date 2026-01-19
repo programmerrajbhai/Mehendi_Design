@@ -104,16 +104,14 @@ public class FullViewActivity extends AppCompatActivity {
         btnBack.setOnClickListener(v -> onBackPressed());
     }
 
-    // 🔥 লজিক: যদি ইমেজটি লোকাল ফাইল হয়, তবে বাটন পরিবর্তন হবে
     private void checkIfOfflineImage() {
         if (!imageUrl.startsWith("http")) {
-            // URL যদি http দিয়ে শুরু না হয়, তার মানে এটি লোকাল ফাইল
             isAlreadySaved = true;
 
-            // UI আপডেট: Save বাটন -> Saved (Check Mark)
-            iconDownload.setImageResource(android.R.drawable.checkbox_on_background);
+             iconDownload.setImageResource(android.R.drawable.checkbox_on_background);
             textDownload.setText("Saved");
-            btnDownload.setAlpha(0.6f); // একটু ঝাপসা করে দিচ্ছি যাতে বুঝা যায় এটি ডিজেবল
+            btnDownload.setAlpha(0.6f);
+
         }
     }
 
