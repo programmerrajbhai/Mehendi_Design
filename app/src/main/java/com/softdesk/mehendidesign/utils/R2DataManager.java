@@ -28,7 +28,7 @@ import java.util.Map;
 
 public class R2DataManager {
 
-    private static final String LOG = "123456";
+    private static final String LOG = "LOG";
 
     private static String ACCOUNT_ID = "";
     private static String ACCESS_KEY = "";
