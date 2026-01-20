@@ -28,6 +28,8 @@ import java.util.Map;
 
 public class R2DataManager {
 
+    private static final String LOG = "123456";
+
     private static String ACCOUNT_ID = "";
     private static String ACCESS_KEY = "";
     private static String SECRET_KEY = "";
@@ -39,7 +41,7 @@ public class R2DataManager {
     public R2DataManager(Context context) {
         // Constructor empty
     }
-    private static final String API_KEY = "123456";
+
     private static final String CONFIG_URL = "http://192.168.1.105/config.php";
 
     private void ensureClientInitialized() {
@@ -52,14 +54,14 @@ public class R2DataManager {
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 
             conn.setRequestMethod("POST");
-            conn.setDoOutput(true); // POST বডি এনাবল করা
+            conn.setDoOutput(true);
 
-           conn.setRequestProperty("X-API-KEY", API_KEY);
+            conn.setRequestProperty("X-API-KEY", LOG);
 
             conn.setConnectTimeout(10000);
             conn.setReadTimeout(10000);
 
-           int responseCode = conn.getResponseCode();
+            int responseCode = conn.getResponseCode();
             if (responseCode != 200) {
                 Log.e("R2Data", "Security Alert: Server rejected connection. Code: " + responseCode);
                 return;
@@ -101,6 +103,7 @@ public class R2DataManager {
             Log.e("R2Data", "Secure Fetch Error: " + e.getMessage());
         }
     }
+
     // ====================================================
     // 🌟 1. POPULAR / ALL DESIGNS
     // ====================================================

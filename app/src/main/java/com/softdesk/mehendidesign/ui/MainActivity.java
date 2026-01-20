@@ -1,7 +1,10 @@
 package com.softdesk.mehendidesign.ui;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -9,6 +12,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
@@ -21,6 +25,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 import com.facebook.shimmer.ShimmerFrameLayout;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationView;
 import com.softdesk.mehendidesign.R;
 import com.softdesk.mehendidesign.adapters.CategoryAdapter;
@@ -44,11 +49,23 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     FavoriteManager favoriteManager;
     R2DataManager r2Manager;
     TextView toolbarTitle;
+    TextView emptyStateText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+                    drawerLayout.closeDrawer(GravityCompat.START);
+                } else {
+                    showExitDialog();
+                }
+            }
+        });
 
         r2Manager = new R2DataManager(this);
         favoriteManager = new FavoriteManager(this);
@@ -66,9 +83,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         shimmerFrameLayout = findViewById(R.id.shimmerViewContainer);
         recyclerView = findViewById(R.id.homeRecyclerView);
         bottomNav = findViewById(R.id.bottomNav);
+        emptyStateText = findViewById(R.id.emptyStateText);
 
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        toggle.getDrawerArrowDrawable().setColor(getResources().getColor(android.R.color.white));
+        toggle.getDrawerArrowDrawable().setColor(getResources().getColor(android.R.color.black));
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
 
@@ -79,7 +97,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             if (id == R.id.nav_home) {
                 loadHomeFeed();
                 return true;
-            } else if (id == R.id.nav_categories) { // 🔥 ফিক্সড
+            } else if (id == R.id.nav_categories) {
                 loadCategoriesFromR2();
                 return true;
             } else if (id == R.id.nav_fav) {
@@ -92,42 +110,66 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             return false;
         });
 
-        loadHomeFeed();
+        if (isConnected()) {
+            loadHomeFeed();
+        } else {
+            showNoInternetDialog(this::loadHomeFeed);
+        }
+    }
+
+    private void showExitDialog() {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Exit App")
+                .setMessage("Are you sure you want to exit?")
+                .setIcon(R.drawable.ic_nav_home)
+                .setPositiveButton("Yes", (dialog, which) -> finishAffinity())
+                .setNegativeButton("No", null)
+                .show();
     }
 
     private void loadHomeFeed() {
+        if (!isConnected()) {
+            showNoInternetDialog(this::loadHomeFeed);
+            return;
+        }
+
         if (toolbarTitle != null) toolbarTitle.setText("Latest Designs");
         startLoading();
 
         r2Manager.fetchAllDesigns(new R2DataManager.DataCallback<List<DesignItem>>() {
             @Override
             public void onResult(List<DesignItem> designs) {
-                stopLoading();
                 if (designs != null && !designs.isEmpty()) {
                     StaggeredGridLayoutManager manager = new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL);
                     manager.setGapStrategy(StaggeredGridLayoutManager.GAP_HANDLING_MOVE_ITEMS_BETWEEN_SPANS);
                     recyclerView.setLayoutManager(manager);
                     recyclerView.setAdapter(new ImageAdapter(MainActivity.this, designs, true));
+                    stopLoading();
                 } else {
-                    Toast.makeText(MainActivity.this, "No designs found", Toast.LENGTH_SHORT).show();
+                    showEmptyState("No designs found");
                 }
             }
         });
     }
 
     private void loadCategoriesFromR2() {
+        if (!isConnected()) {
+            showNoInternetDialog(this::loadCategoriesFromR2);
+            return;
+        }
+
         if (toolbarTitle != null) toolbarTitle.setText("Categories");
         startLoading();
 
         r2Manager.fetchCategories(new R2DataManager.DataCallback<List<CategoryModel>>() {
             @Override
             public void onResult(List<CategoryModel> categories) {
-                stopLoading();
                 if (categories != null && !categories.isEmpty()) {
                     recyclerView.setLayoutManager(new LinearLayoutManager(MainActivity.this));
                     recyclerView.setAdapter(new CategoryAdapter(MainActivity.this, categories));
+                    stopLoading();
                 } else {
-                    Toast.makeText(MainActivity.this, "No Categories Found", Toast.LENGTH_SHORT).show();
+                    showEmptyState("No Categories Found");
                 }
             }
         });
@@ -135,8 +177,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     private void loadFavorites() {
         if (toolbarTitle != null) toolbarTitle.setText("My Favorites");
-        recyclerView.setVisibility(View.VISIBLE);
-        shimmerFrameLayout.setVisibility(View.GONE);
 
         List<String> favUrls = favoriteManager.getAllFavorites();
         List<DesignItem> favItems = new ArrayList<>();
@@ -146,18 +186,18 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
 
         Collections.reverse(favItems);
-        recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
-        recyclerView.setAdapter(new ImageAdapter(this, favItems, false));
 
-        if(favItems.isEmpty()){
-            Toast.makeText(this, "No Favorites Added Yet", Toast.LENGTH_SHORT).show();
+        if (!favItems.isEmpty()) {
+            recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
+            recyclerView.setAdapter(new ImageAdapter(this, favItems, false));
+            stopLoading();
+        } else {
+            showEmptyState("No Favorites Added Yet");
         }
     }
 
     private void loadPrivateDownloads() {
         if (toolbarTitle != null) toolbarTitle.setText("Saved");
-        recyclerView.setVisibility(View.VISIBLE);
-        shimmerFrameLayout.setVisibility(View.GONE);
 
         File folder = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "SavedDesigns");
         List<DesignItem> downloadedItems = new ArrayList<>();
@@ -171,15 +211,59 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
 
         Collections.reverse(downloadedItems);
-        recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
-        recyclerView.setAdapter(new ImageAdapter(this, downloadedItems, false));
 
-        if(downloadedItems.isEmpty()){
-            Toast.makeText(this, "No Downloads Found", Toast.LENGTH_SHORT).show();
+        if (!downloadedItems.isEmpty()) {
+            recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
+            recyclerView.setAdapter(new ImageAdapter(this, downloadedItems, false));
+            stopLoading();
+        } else {
+            showEmptyState("No Downloads Found");
+        }
+    }
+
+    private boolean isConnected() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (cm != null) {
+            NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+            return activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+        }
+        return false;
+    }
+
+    private void showNoInternetDialog(Runnable retryAction) {
+
+        shimmerFrameLayout.stopShimmer();
+        shimmerFrameLayout.setVisibility(View.GONE);
+        recyclerView.setVisibility(View.GONE);
+        if (emptyStateText != null) {
+            emptyStateText.setVisibility(View.VISIBLE);
+            emptyStateText.setText("No Internet Connection");
+        }
+
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Connection Error")
+                .setMessage("No internet connection found. Please check your network and try again.")
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .setCancelable(false)
+                .setPositiveButton("Retry", (dialog, which) -> {
+
+                })
+                .setNegativeButton("Exit", (dialog, which) -> finishAffinity()) // অ্যাপ বন্ধ করবে
+                .show();
+    }
+
+    private void showEmptyState(String message) {
+        shimmerFrameLayout.stopShimmer();
+        shimmerFrameLayout.setVisibility(View.GONE);
+        recyclerView.setVisibility(View.GONE);
+        if (emptyStateText != null) {
+            emptyStateText.setVisibility(View.VISIBLE);
+            emptyStateText.setText(message);
         }
     }
 
     private void startLoading() {
+        if (emptyStateText != null) emptyStateText.setVisibility(View.GONE);
         recyclerView.setVisibility(View.GONE);
         shimmerFrameLayout.setVisibility(View.VISIBLE);
         shimmerFrameLayout.startShimmer();
@@ -188,6 +272,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private void stopLoading() {
         shimmerFrameLayout.stopShimmer();
         shimmerFrameLayout.setVisibility(View.GONE);
+        if (emptyStateText != null) emptyStateText.setVisibility(View.GONE);
         recyclerView.setVisibility(View.VISIBLE);
     }
 
@@ -198,13 +283,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         if (id == R.id.nav_home) {
             loadHomeFeed();
             bottomNav.setSelectedItemId(R.id.nav_home);
-        } else if (id == R.id.nav_categories) { // 🔥 ফিক্সড
+        } else if (id == R.id.nav_categories) {
             loadCategoriesFromR2();
             bottomNav.setSelectedItemId(R.id.nav_categories);
         } else if (id == R.id.nav_fav) {
-            loadFavorites(); // 🔥 এখানে লোড ফেভারিট কল করা হলো
+            loadFavorites();
             bottomNav.setSelectedItemId(R.id.nav_fav);
-        } else if (id == R.id.nav_download) { // 🔥 নাম ফিক্সড: nav_download
+        } else if (id == R.id.nav_download) {
             loadPrivateDownloads();
             bottomNav.setSelectedItemId(R.id.nav_download);
         } else if (id == R.id.nav_rate) {
@@ -219,15 +304,5 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         drawerLayout.closeDrawer(GravityCompat.START);
         return true;
-    }
-
-    @SuppressLint("GestureBackNavigation")
-    @Override
-    public void onBackPressed() {
-        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            drawerLayout.closeDrawer(GravityCompat.START);
-        } else {
-            super.onBackPressed();
-        }
     }
 }
