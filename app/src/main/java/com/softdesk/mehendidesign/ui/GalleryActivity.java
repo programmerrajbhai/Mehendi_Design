@@ -23,9 +23,8 @@ public class GalleryActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_gallery); // XML লোড হচ্ছে
+        setContentView(R.layout.activity_gallery);
 
-        // ইনটেন্ট থেকে ডাটা নেওয়া
         folderPrefix = getIntent().getStringExtra("CAT_ID");
         String categoryTitle = getIntent().getStringExtra("CAT_TITLE");
 
@@ -51,16 +50,14 @@ public class GalleryActivity extends AppCompatActivity {
             getSupportActionBar().setHomeButtonEnabled(true);
         }
 
-        // View Finding
         shimmerFrameLayout = findViewById(R.id.shimmerViewContainer);
         recyclerView = findViewById(R.id.homeRecyclerView);
 
-        // 3 Column Grid Layout
         recyclerView.setLayoutManager(new GridLayoutManager(this, 3));
     }
 
     private void loadImagesFromCloud() {
-        // 🔥 CRASH FIX: নাল চেক যোগ করা হলো
+        //  CRASH FIX
         if (shimmerFrameLayout != null) {
             shimmerFrameLayout.setVisibility(View.VISIBLE);
             shimmerFrameLayout.startShimmer();

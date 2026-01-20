@@ -15,7 +15,6 @@ public class DesignItem {
     public String getCategoryName() { return categoryName; }
     public int getViewCount() { return viewCount; }
 
-    // 🔥 NEW: ভিউ বাড়ানোর জন্য এই লাইনটি লাগবে
     public void setViewCount(int viewCount) {
         this.viewCount = viewCount;
     }

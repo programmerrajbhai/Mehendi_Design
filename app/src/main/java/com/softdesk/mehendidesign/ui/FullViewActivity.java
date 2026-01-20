@@ -34,7 +34,6 @@ import java.util.List;
 
 public class FullViewActivity extends AppCompatActivity {
 
-    // 🔥 স্ট্যাটিক লিস্ট (লিস্ট পাঠানোর সহজ উপায়)
     public static List<DesignItem> sDesignList = new ArrayList<>();
 
     ViewPager2 viewPager;
@@ -44,7 +43,7 @@ public class FullViewActivity extends AppCompatActivity {
     TextView textFav, textDownload;
 
     FavoriteManager favoriteManager;
-    DesignItem currentItem; // বর্তমানে যে ইমেজটা দেখাচ্ছে
+    DesignItem currentItem;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,16 +66,13 @@ public class FullViewActivity extends AppCompatActivity {
         iconDownload = (ImageView) ((LinearLayout) btnDownload).getChildAt(0);
         textDownload = (TextView) ((LinearLayout) btnDownload).getChildAt(1);
 
-        // 🔥 ১. ইনটেন্ট থেকে পজিশন নেওয়া
         int position = getIntent().getIntExtra("POSITION", 0);
 
-        // 🔥 ২. অ্যাডাপ্টার সেট করা
         if (sDesignList != null && !sDesignList.isEmpty()) {
             FullViewAdapter adapter = new FullViewAdapter(this, sDesignList);
             viewPager.setAdapter(adapter);
             viewPager.setCurrentItem(position, false); // ক্লিক করা ইমেজে জাম্প করা
 
-            // প্রথমবার লোড করার জন্য ম্যানুয়ালি কল করা
             onPageChanged(position);
         } else {
             Toast.makeText(this, "Error loading images", Toast.LENGTH_SHORT).show();
@@ -84,7 +80,6 @@ public class FullViewActivity extends AppCompatActivity {
             return;
         }
 
-        // 🔥 ৩. সোয়াইপ লিসেনার (পেজ চেঞ্জ হলে বাটন আপডেট হবে)
         viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override
             public void onPageSelected(int position) {
@@ -93,9 +88,7 @@ public class FullViewActivity extends AppCompatActivity {
             }
         });
 
-        // --- BUTTON ACTIONS ---
 
-        // Save Button
         btnDownload.setOnClickListener(v -> {
             if (currentItem == null) return;
             if (isOfflineImage(currentItem.getImageUrl())) {
@@ -105,7 +98,6 @@ public class FullViewActivity extends AppCompatActivity {
             }
         });
 
-        // Share Button
         btnShare.setOnClickListener(v -> {
             if (currentItem == null) return;
             downloadAndShareImage(currentItem.getImageUrl());
@@ -123,13 +115,12 @@ public class FullViewActivity extends AppCompatActivity {
                 favoriteManager.addFavorite(url);
                 Toast.makeText(this, "Added to Favorites ❤️", Toast.LENGTH_SHORT).show();
             }
-            updateButtonsState(); // বাটন রিফ্রেশ
+            updateButtonsState();
         });
 
         btnBack.setOnClickListener(v -> onBackPressed());
     }
 
-    // 🔥 পেজ চেঞ্জ হলে ডাটা আপডেট করার মেথড
     private void onPageChanged(int position) {
         if (sDesignList != null && position < sDesignList.size()) {
             currentItem = sDesignList.get(position);
@@ -141,7 +132,6 @@ public class FullViewActivity extends AppCompatActivity {
         if (currentItem == null) return;
         String url = currentItem.getImageUrl();
 
-        // Check Favorite
         if (favoriteManager.isFavorite(url)) {
             iconFav.setImageResource(android.R.drawable.star_big_on);
             iconFav.setColorFilter(getResources().getColor(android.R.color.holo_orange_light));
@@ -168,7 +158,6 @@ public class FullViewActivity extends AppCompatActivity {
         return !url.startsWith("http");
     }
 
-    // 🔥 Glide ব্যবহার করে ইমেজ ডাউনলোড এবং সেভ
     private void downloadAndSaveImage(String url) {
         Toast.makeText(this, "Saving...", Toast.LENGTH_SHORT).show();
         Glide.with(this)
@@ -199,7 +188,6 @@ public class FullViewActivity extends AppCompatActivity {
 
             Toast.makeText(this, "Saved for Offline! ✅", Toast.LENGTH_SHORT).show();
 
-            // বাটন আপডেট UI চেঞ্জ
             iconDownload.setImageResource(android.R.drawable.checkbox_on_background);
             textDownload.setText("Saved");
             btnDownload.setAlpha(0.6f);
@@ -209,8 +197,6 @@ public class FullViewActivity extends AppCompatActivity {
             Toast.makeText(this, "Failed to save image.", Toast.LENGTH_SHORT).show();
         }
     }
-
-    // 🔥 শেয়ার ফাংশন
     private void downloadAndShareImage(String url) {
         Toast.makeText(this, "Preparing Share...", Toast.LENGTH_SHORT).show();
         Glide.with(this)

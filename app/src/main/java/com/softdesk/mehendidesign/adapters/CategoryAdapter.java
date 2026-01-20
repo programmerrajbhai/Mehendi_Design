@@ -32,7 +32,7 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // 🔥 Using the new Wide Card Layout
+
         View view = LayoutInflater.from(context).inflate(R.layout.item_category_card, parent, false);
         return new ViewHolder(view);
     }
@@ -60,7 +60,6 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
         });
     }
 
-    // --- Animation Logic ---
     private void setAnimation(View viewToAnimate, int position) {
         if (position > lastPosition) {
             ScaleAnimation anim = new ScaleAnimation(0.0f, 1.0f, 0.0f, 1.0f,
